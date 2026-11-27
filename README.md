@@ -33,7 +33,7 @@ One-off update without the server: `python -m pipeline.run`.
 
 ## Sources
 
-ERR (ET + EN), Postimees, Äripäev, Õhtuleht, Levila (titles and links only), BBC, The Guardian (API key), The Verge, Ars Technica, TechCrunch. Delfi is left out: its terms forbid automated collection.
+ERR (ET + EN), Postimees, Äripäev, Õhtuleht, Levila (titles and links only), BBC, The Guardian (API key), The Verge, Ars Technica, TechCrunch, and TLDR News Global and EU videos on YouTube (linked, not embedded). Delfi is left out: its terms forbid automated collection.
 
 ## Tests
 

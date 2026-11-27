@@ -34,6 +34,9 @@ SOURCES: list[Source] = [
     Source("The Verge", "https://www.theverge.com/rss/index.xml", "en"),
     Source("Ars Technica", "https://feeds.arstechnica.com/arstechnica/index", "en"),
     Source("TechCrunch", "https://techcrunch.com/feed/", "en"),
+    # Video explainers (YouTube channel feeds; we link to the video, never embed or download it)
+    Source("TLDR Global ▶", "https://www.youtube.com/feeds/videos.xml?channel_id=UC-uhvujip5deVcEtLxnW8qg", "en"),
+    Source("TLDR EU ▶", "https://www.youtube.com/feeds/videos.xml?channel_id=UC-eegKVWEgBCa4OzjnK_PtA", "en"),
 ]
 
 USER_AGENT = "Uudised/0.1 (personal news reader; headlines and links only)"
