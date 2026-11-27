@@ -77,7 +77,7 @@ def link_of(it: Item) -> dict:
     return {"source": it.source, "url": it.url, "title": it.title, "lang": it.lang, "published": it.published}
 
 
-def merge(pool: dict[str, dict], items: list[Item], scores: dict[str, dict], state: dict, t: datetime) -> dict:
+def merge(pool: dict[str, dict], items: list[Item], scores: dict[str, dict], state: dict, t: datetime, scorer: str = "claude") -> dict:
     stats = {"new_stories": 0, "updated": 0, "noise": 0, "low": 0}
     done = set(state["read"]) | set(state["dismissed"])
     new_groups: dict[str, str] = {}  # "new:label" -> story id created this run
@@ -133,6 +133,7 @@ def merge(pool: dict[str, dict], items: list[Item], scores: dict[str, dict], sta
             "has_update": False,
             "follow_up_of": follow_up_of,
             "links": [link_of(it)],
+            "scorer": scorer,
         }
         if s["story"].startswith("new:"):
             new_groups[s["story"]] = sid
@@ -169,6 +170,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print("Fetching sources…", file=sys.stderr)
     items = fetch_all(args.fixtures)
+    use_llm = bool(not args.offline and (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")))
+    if use_llm:  # replace rough offline cards from earlier dry runs
+        pool = {k: v for k, v in pool.items() if v.get("scorer") != "offline"}
     fresh = [it for it in items if it.key not in seen and it.key not in pool][: args.limit]
     print(f"{len(items)} items fetched, {len(fresh)} new", file=sys.stderr)
 
@@ -182,16 +186,16 @@ def main(argv: list[str] | None = None) -> int:
         skipped = [pool[i]["title"] for i in sorted(state["dismissed"], key=state["dismissed"].get) if i in pool]
         read = [pool[i]["title"] for i in sorted(state["read"], key=state["read"].get) if i in pool]
 
-        use_llm = not args.offline and (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
         scorer = llm_score if use_llm else offline_score
         print(f"Scoring with {'Claude' if use_llm else 'offline heuristic'}…", file=sys.stderr)
         scores = scorer(fresh, existing, skipped, read)
 
-        stats = merge(pool, fresh, scores, state, t)
+        stats = merge(pool, fresh, scores, state, t, scorer="claude" if use_llm else "offline")
         print(f"Result: {stats}", file=sys.stderr)
-        for it in fresh:
-            if it.key in scores:  # unscored items (failed batch) get another chance next run
-                seen[it.key] = iso(t)
+        if use_llm:  # offline scores are rough, so let Claude re-score these items later
+            for it in fresh:
+                if it.key in scores:  # unscored items (failed batch) get another chance next run
+                    seen[it.key] = iso(t)
 
     prune(pool, state, t)
     seen_cutoff = iso(t - timedelta(days=SEEN_RETENTION_DAYS))
